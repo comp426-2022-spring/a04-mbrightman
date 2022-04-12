@@ -135,50 +135,74 @@ function countFlips(array) {
 // Use Morgan for Logging
 let logging = morgan('combined')
 
-app.use(logging('common', { stream: accessLog }))
+// app.use(logging('common', { stream: accessLog }))
+app.use( (req, res, next) => {
+  let logdata = {
+    remoteaddr: req.ip,
+    remoteuser: req.user,
+    time: Date.now(),
+    method: req.method,
+    url: req.url,
+    protocol: req.protocol,
+    httpversion: req.httpVersion,
+    status: res.statusCode,
+    referer: req.headers['referer'],
+    useragent: req.headers['user-agent']
+  }
+
+  const stmt = db.prepare('INSERT INTO accesslog (remoteaddr, remoteuser, time, method, url, protocol, httpversion, status, referer, useragent) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+  const info = stmt.run(logdata.remoteaddr, logdata.remoteuser, logdata.time, logdata.method, logdata.url, logdata.protocol, logdata.httpversion, logdata.status, logdata.referer, logdata.useragent)
+  res.status(200).json(info)
+})
+
+if (write_logs === true) {
+  const WRITESTREAM = fs.createWriteStream('access.log', { flags: 'a'})
+
+  app.use(morgan('combined', { stream: WRITESTREAM }))
+}
 
 // default endpoint
-app.get('/app/', (req,res) => {
+app.get('/app/', (req,res,next) => {
     const statusCode = 200
     const statusMessage = 'OK'
     res.status(statusCode).end(statusCode + ' ' + statusMessage)
 })
 
 // allows you to go to that endpoint and replace :number with something else
-app.get('/app/flips/:number', (req, res) => {
+app.get('/app/flips/:number', (req, res, next) => {
     flips_array = coinFlips(req.params.number)
     flips_summary = countFlips(flips_array)
     res.status(200).json({ 'raw': flips_array, 'summary': flips_summary })
 })
 
-app.get('/app/flip/', (req, res) => {
+app.get('/app/flip/', (req, res, next) => {
     var flip = coinFlip()
     res.status(200).json({ 'flip': flip })
 })
 
-app.get('/app/flip/call/heads/', (req, res) => {
+app.get('/app/flip/call/heads/', (req, res, next) => {
     var flip = flipACoin('heads')
     res.status(200).json(flip)
 })
 
-app.get('/app/flip/call/tails/', (req, res) => {
+app.get('/app/flip/call/tails/', (req, res, next) => {
     var flip = flipACoin('tails')
     res.status(200).json(flip)
 })
 
 if (do_debug === true) {
-  app.get('/app/log/access', (req,res) => {
+  app.get('/app/log/access', (req,res, next) => {
     // return all records in accesslog table
     let table = logdb.all();
     res.status(200).send(table);
   })
 
-  app.get('/app/error', (req,res) => {
+  app.get('/app/error', (req,res, next) => {
     res.status(200).send("Error test successful.")
   })
 }
 
-app.use(function(req, res) {
+app.use(function(req, res, next) {
     // send turns text into html
     // end keeps the text as plaintext
     res.status(404).send("Endpoint does not exist")
