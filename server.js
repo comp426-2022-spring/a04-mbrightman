@@ -11,8 +11,8 @@ const morgan = require('morgan')
 const fs = require('fs');
 const { exit } = require('process');
 
-var write_logs = true;
-var do_debug = false;
+var write_logs = 'true';
+var do_debug = 'false';
 
 var args = require('minimist')(process.argv.slice(2))
 
@@ -41,12 +41,12 @@ if (args['port'] === undefined) {
     port = args['port']
 }
 
-if (args['log'] === false) {
+if (args['log'] === 'false') {
   // no logs are written
   write_logs = false;
 }
 
-if (args['debug'] === true) {
+if (args['debug'] === 'true') {
   // create endpoints /app/log/access/ which returns a JSON access log from the database and /app/error which throws 	an error with the message "Error test successful." Defaults to false.
   do_debug = true;
 }
@@ -155,7 +155,7 @@ app.use( (req, res, next) => {
   res.status(200).json(info)
 })
 
-if (write_logs === true) {
+if (write_logs === 'true') {
   const WRITESTREAM = fs.createWriteStream('access.log', { flags: 'a'})
 
   app.use(morgan('combined', { stream: WRITESTREAM }))
@@ -190,17 +190,17 @@ app.get('/app/flip/call/tails/', (req, res, next) => {
     res.status(200).json(flip)
 })
 
-if (do_debug === true) {
-  app.get('/app/log/access', (req,res, next) => {
-    // return all records in accesslog table
-    let table = logdb.all();
-    res.status(200).send(table);
-  })
+// if (do_debug === 'true') {
+//   app.get('/app/log/access', (req,res, next) => {
+//     // return all records in accesslog table
+//     let table = logdb.all();
+//     res.status(200).send(table);
+//   })
 
-  app.get('/app/error', (req,res, next) => {
-    res.status(200).send("Error test successful.")
-  })
-}
+//   app.get('/app/error', (req,res, next) => {
+//     res.status(200).send("Error test successful.")
+//   })
+// }
 
 app.use(function(req, res, next) {
     // send turns text into html
