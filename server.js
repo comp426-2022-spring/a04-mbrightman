@@ -127,7 +127,7 @@ app.use( (req, res, next) => {
   let logdata = {
     remoteaddr: req.ip,
     remoteuser: req.user,
-    time: Date.now().toString(),
+    time: Date.now(),
     method: req.method,
     url: req.url,
     protocol: req.protocol,
@@ -138,7 +138,7 @@ app.use( (req, res, next) => {
   }
 
   const stmt = db.prepare('INSERT INTO accesslog (remoteaddr, remoteuser, time, method, url, protocol, httpversion, status, referer, useragent) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-  const info = stmt.run(logdata.remoteaddr.toString(), logdata.remoteuser, logdata.time, logdata.method.toString(), logdata.url.toString(), logdata.protocol.toString(), logdata.httpversion, logdata.status, logdata.referer, logdata.useragent)
+  const info = stmt.run(logdata.remoteaddr.toString(), logdata.remoteuser.toString(), logdata.time.toString(), logdata.method.toString(), logdata.url.toString(), logdata.protocol.toString(), logdata.httpversion, logdata.status, logdata.referer.toString(), logdata.useragent.toString())
   next()
 })
 
@@ -179,8 +179,13 @@ app.get('/app/flip/call/tails/', (req, res, next) => {
 // adding /app/log/access and /app/error for if do_debug is true
 app.get('/app/log/access', (req, res, next) => {
   if (do_debug === true) {
-    var stmt = logdb.prepare('SELECT * FROM accesslog').all();
-    res.status(200).json(stmt)
+    try{
+      var stmt = logdb.prepare('SELECT * FROM accesslog').all();
+      res.status(200).json(stmt)
+    } catch {
+      console.error(e)
+    }
+    
   } else {
     res.status(404).type('text/plain').send('404 NOT FOUND')
   }
