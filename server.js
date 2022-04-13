@@ -9,12 +9,15 @@ const logdb = require('./database')
 
 const morgan = require('morgan')
 const fs = require('fs');
-const { exit } = require('process');
 
-var write_logs = 'true';
-var do_debug = 'false';
+var args = require('minimist')(process.argv.slice(2), {
+  int: ['port'],
+  boolean: ['log'],
+  boolean: ['help'],
+  boolean: ['debug']
+})
 
-var args = require('minimist')(process.argv.slice(2))
+const port = args.port || process.env.PORT || 5555
 
 if (args.help || args.h) {
     console.log(`server.js [options]
@@ -32,24 +35,11 @@ if (args.help || args.h) {
   
     --help	Return this message and exit.`)
 
-    process.exit(0)
+    process.exit(1)
 }
 
-if (args['port'] === undefined) {
-    port = 5000
-} else {
-    port = args['port']
-}
-
-if (args['log'] === 'false') {
-  // no logs are written
-  write_logs = false;
-}
-
-if (args['debug'] === 'true') {
-  // create endpoints /app/log/access/ which returns a JSON access log from the database and /app/error which throws 	an error with the message "Error test successful." Defaults to false.
-  do_debug = true;
-}
+const do_logs = !(((args.log === false) && (args.log != null)) || false);
+const do_debug = ((args.debug === true) && (args.debug != null)) || false;
 
 const server = app.listen(port, () => {
     console.log(`App is running on port ${port}`)
@@ -132,15 +122,12 @@ function countFlips(array) {
     END FLIP FUNCS
 */
 
-// Use Morgan for Logging
-let logging = morgan('combined')
-
 // app.use(logging('common', { stream: accessLog }))
 app.use( (req, res, next) => {
   let logdata = {
     remoteaddr: req.ip,
     remoteuser: req.user,
-    time: Date.now(),
+    time: Date.now().toString(),
     method: req.method,
     url: req.url,
     protocol: req.protocol,
@@ -151,13 +138,12 @@ app.use( (req, res, next) => {
   }
 
   const stmt = db.prepare('INSERT INTO accesslog (remoteaddr, remoteuser, time, method, url, protocol, httpversion, status, referer, useragent) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-  const info = stmt.run(logdata.remoteaddr, logdata.remoteuser, logdata.time, logdata.method, logdata.url, logdata.protocol, logdata.httpversion, logdata.status, logdata.referer, logdata.useragent)
-  res.status(200).json(info)
+  const info = stmt.run(logdata.remoteaddr.toString(), logdata.remoteuser, logdata.time, logdata.method.toString(), logdata.url.toString(), logdata.protocol.toString(), logdata.httpversion, logdata.status, logdata.referer, logdata.useragent)
+  next()
 })
 
-if (write_logs === 'true') {
+if (do_logs === 'true') {
   const WRITESTREAM = fs.createWriteStream('access.log', { flags: 'a'})
-
   app.use(morgan('combined', { stream: WRITESTREAM }))
 }
 
@@ -190,17 +176,23 @@ app.get('/app/flip/call/tails/', (req, res, next) => {
     res.status(200).json(flip)
 })
 
-// if (do_debug === 'true') {
-//   app.get('/app/log/access', (req,res, next) => {
-//     // return all records in accesslog table
-//     let table = logdb.all();
-//     res.status(200).send(table);
-//   })
+// adding /app/log/access and /app/error for if do_debug is true
+app.get('/app/log/access', (req, res, next) => {
+  if (do_debug === true) {
+    var stmt = logdb.prepare('SELECT * FROM accesslog').all();
+    res.status(200).json(stmt)
+  } else {
+    res.status(404).type('text/plain').send('404 NOT FOUND')
+  }
+})
 
-//   app.get('/app/error', (req,res, next) => {
-//     res.status(200).send("Error test successful.")
-//   })
-// }
+app.get('/app/error', (req, res, next) => {
+  if (do_debug === true) {
+    throw new Error('Error test successful.')
+  } else {
+    res.status(404).type('text/plain').send('404 NOT FOUND')
+  }
+})
 
 app.use(function(req, res, next) {
     // send turns text into html
