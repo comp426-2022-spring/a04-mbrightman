@@ -11,7 +11,6 @@ const morgan = require('morgan')
 const fs = require('fs');
 
 var args = require('minimist')(process.argv.slice(2))
-console.log(args)
 
 const port = args.port || process.env.PORT || 5555
 
@@ -130,8 +129,8 @@ app.use( (req, res, next) => {
     useragent: req.headers['user-agent']
   }
 
-  const stmt = db.prepare('INSERT INTO accesslog (remoteaddr, remoteuser, time, method, url, protocol, httpversion, status, referer, useragent) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-  const info = stmt.run(logdata.remoteaddr.toString(), logdata.remoteuser.toString(), logdata.time.toString(), logdata.method.toString(), logdata.url.toString(), logdata.protocol.toString(), logdata.httpversion, logdata.status, logdata.referer.toString(), logdata.useragent.toString())
+  const stmt = logdb.prepare('INSERT INTO accesslog (remoteaddr, remoteuser, time, method, url, protocol, httpversion, status, referer, useragent) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+  const info = stmt.run(logdata.remoteaddr, logdata.remoteuser, logdata.time, logdata.method, logdata.url, logdata.protocol, logdata.httpversion, logdata.status, logdata.referer, logdata.useragent)
   next()
 })
 
@@ -185,7 +184,7 @@ app.get('/app/log/access', (req, res, next) => {
 })
 
 app.get('/app/error', (req, res, next) => {
-  if (do_debug === true) {
+  if (args.debug === 'true') {
     throw new Error('Error test successful.')
   } else {
     res.status(404).type('text/plain').send('404 NOT FOUND')

@@ -15,14 +15,14 @@ if (row === undefined) {
         CREATE TABLE accesslog ( id INTEGER PRIMARY KEY,
                               remoteaddr VARCHAR, 
                               remoteuser VARCHAR, 
-                              time VARCHAR, 
+                              time NUMERIC, 
                               method VARCHAR, 
                               url VARCHAR, 
-                              protocol VARCHAR
+                              protocol VARCHAR,
                               httpversion NUMERIC, 
                               status INTEGER,
                               referer VARCHAR, 
-                              useragent VARCHAR )
+                              useragent TEVARCHARXT )
     `
     logdb.exec(sqlInit)
 } else {
