@@ -10,12 +10,8 @@ const logdb = require('./database')
 const morgan = require('morgan')
 const fs = require('fs');
 
-var args = require('minimist')(process.argv.slice(2), {
-  int: ['port'],
-  boolean: ['log'],
-  boolean: ['help'],
-  boolean: ['debug']
-})
+var args = require('minimist')(process.argv.slice(2))
+console.log(args)
 
 const port = args.port || process.env.PORT || 5555
 
@@ -37,9 +33,6 @@ if (args.help || args.h) {
 
     process.exit(1)
 }
-
-const do_logs = !(((args.log === false) && (args.log != null)) || false);
-const do_debug = ((args.debug === true) && (args.debug != null)) || false;
 
 const server = app.listen(port, () => {
     console.log(`App is running on port ${port}`)
@@ -142,7 +135,7 @@ app.use( (req, res, next) => {
   next()
 })
 
-if (do_logs === 'true') {
+if (args.log === 'true') {
   const WRITESTREAM = fs.createWriteStream('access.log', { flags: 'a'})
   app.use(morgan('combined', { stream: WRITESTREAM }))
 }
@@ -178,7 +171,7 @@ app.get('/app/flip/call/tails/', (req, res, next) => {
 
 // adding /app/log/access and /app/error for if do_debug is true
 app.get('/app/log/access', (req, res, next) => {
-  if (do_debug === true) {
+  if (args.debug === 'true') {
     try{
       var stmt = logdb.prepare('SELECT * FROM accesslog').all();
       res.status(200).json(stmt)
