@@ -2,17 +2,17 @@
 // OR run the server in one terminal
 // use ANOTHER terminal and curl to interact w/ server
 
-const express = require('express')
-const app = express()
+const express = require('express');
+const app = express();
 
-const logdb = require('./database')
+const logdb = require('./database');
 
-const morgan = require('morgan')
+const morgan = require('morgan');
 const fs = require('fs');
 
-var args = require('minimist')(process.argv.slice(2))
+const args = require('minimist')(process.argv.slice(2))
 
-const port = args.port || process.env.PORT || 5555
+var port = args.port || 5555
 
 const help = (`
 server.js [options]
@@ -36,8 +36,11 @@ if (args.help || args.h) {
     process.exit(0)
 }
 
+app.use(express.urlencoded({ extended: true }))
+app.use(express.json())
+
 const server = app.listen(port, () => {
-    console.log(`App is running on port ${port}`)
+    console.log("App is running on port %PORT%".replace("%PORT%", port))
 })
 
 /*
@@ -117,6 +120,13 @@ function countFlips(array) {
     END FLIP FUNCS
 */
 
+// default endpoint
+app.get('/app/', (req,res,next) => {
+  const statusCode = 200
+  const statusMessage = 'OK'
+  res.status(statusCode).end(statusCode + ' ' + statusMessage)
+})
+
 // app.use(logging('common', { stream: accessLog }))
 app.use( (req, res, next) => {
   let logdata = {
@@ -140,16 +150,9 @@ app.use( (req, res, next) => {
 })
 
 if (args.log === 'true') {
-  const WRITESTREAM = fs.createWriteStream('access.log', { flags: 'a'})
-  app.use(morgan('combined', { stream: WRITESTREAM }))
+  const accesslog = fs.createWriteStream('access.log', { flags: 'a'})
+  app.use(morgan('combined', { stream: accesslog }))
 }
-
-// default endpoint
-app.get('/app/', (req,res,next) => {
-    const statusCode = 200
-    const statusMessage = 'OK'
-    res.status(statusCode).end(statusCode + ' ' + statusMessage)
-})
 
 // allows you to go to that endpoint and replace :number with something else
 app.get('/app/flips/:number', (req, res, next) => {
