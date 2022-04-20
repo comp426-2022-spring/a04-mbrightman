@@ -14,7 +14,7 @@ const args = require('minimist')(process.argv.slice(2))
 
 const port = args.port || process.env.PORT || 5555
 
-const do_debug = args.debug || false
+const do_debug = args.debug || 'false'
 
 const help = (`
 server.js [options]
@@ -69,8 +69,6 @@ app.use( (req, res, next) => {
     useragent: req.headers['user-agent']
   }
 
-  console.log(logdata)
-
   const stmt = logdb.prepare('INSERT INTO accesslog (remoteaddr, remoteuser, time, method, url, protocol, httpversion, status, referer, useragent) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
   const info = stmt.run(logdata.remoteaddr, logdata.remoteuser, logdata.time, logdata.method, logdata.url, logdata.protocol, logdata.httpversion, logdata.status, logdata.referer, logdata.useragent)
   next()
@@ -103,7 +101,7 @@ app.get('/app/flip/call/tails/', (req, res, next) => {
     res.status(200).json(flip)
 })
 
-if (do_debug === true) {
+if (do_debug === 'true') {
   app.get('/app/log/access', (req, res, next) => {
     try {
       var stmt = logdb.prepare('SELECT * FROM accesslog').all();
