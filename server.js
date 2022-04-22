@@ -14,7 +14,9 @@ const args = require('minimist')(process.argv.slice(2))
 
 const port = args.port || process.env.PORT || 5555
 
-const do_debug = args.debug || 'false'
+const do_debug = args.debug || false
+
+console.log(do_debug)
 
 const help = (`
 server.js [options]
@@ -101,7 +103,7 @@ app.get('/app/flip/call/tails/', (req, res, next) => {
     res.status(200).json(flip)
 })
 
-if (do_debug === 'true') {
+if (do_debug === true) {
   app.get('/app/log/access', (req, res, next) => {
     try {
       var stmt = logdb.prepare('SELECT * FROM accesslog').all();
